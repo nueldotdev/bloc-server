@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { createNote, getNotes, deleteNote } from './controller'
+import { createNote, getNotes, deleteNote, updateNote } from './controller'
 import { requireAuth } from '../utils/auth'
 
 const router = Router()
