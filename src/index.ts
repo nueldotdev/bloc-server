@@ -1,6 +1,5 @@
 import express from 'express'
 import cors from 'cors'
-import dotenv from 'dotenv'
 import morgan from 'morgan'
 import transcriptRouter from './transcripts/routes'
 import geminiRouter from './gemini/route'
@@ -8,7 +7,14 @@ import notesRouter from './notes/routes'
 import sessionsRouter from './sessions/routes'
 import libraryRouter from './library/routes'
 
-dotenv.config()
+// Dynamically import dotenv for ESM compatibility
+const loadDotEnv = async () => {
+  if (process.env.NODE_ENV !== 'production') {
+    const dotenv = await import('dotenv');
+    dotenv.config();
+  }
+};
+loadDotEnv();
 
 const app = express()
 const PORT = process.env.PORT || 5000
