@@ -16,13 +16,26 @@ const PORT = process.env.PORT || 5000
 // Logging
 app.use(morgan('dev'))
 
+// Dynamically handle CORS for local and production
+const allowedOrigins = [
+  "http://localhost:5173", 
+  process.env.FRONTEND_URL // Add your Vercel frontend URL to .env on Vercel
+].filter(Boolean) as string[]
+
 app.use(cors({
-  origin: "http://localhost:5173",
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true)
+    } else {
+      callback(new Error('Not allowed by CORS'))
+    }
+  },
   credentials: true,
 }))
+
 app.use(express.json())
 
-// Request logger for debugging 404s
+// Request logger for debugging
 app.use((req, res, next) => {
   console.log(`[Incoming Request] ${req.method} ${req.url}`)
   next()
@@ -50,7 +63,13 @@ app.use((err: any, req: any, res: any, next: any) => {
   res.status(500).json({ error: 'Internal server error' })
 })
 
-app.listen(PORT, () => {
-  console.log(`Server running on port http://localhost:${PORT}`)
-  console.log('Registered Routes: /transcripts, /gemini, /notes, /sessions, /library')
-})
+// Traditional listen for local development
+if (process.env.NODE_ENV !== 'production') {
+    app.listen(PORT, () => {
+        console.log(`Server running on port http://localhost:${PORT}`)
+        console.log('Registered Routes: /transcripts, /gemini, /notes, /sessions, /library')
+    })
+}
+
+// Export for Vercel Serverless Functions
+export default app
