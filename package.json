@@ -12,6 +12,7 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "type": "commonjs",
   "dependencies": {
     "@google/genai": "^1.50.1",
     "@supabase/supabase-js": "^2.104.1",
