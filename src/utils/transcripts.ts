@@ -1,10 +1,7 @@
-// @ts-nocheck
-import { fetchTranscript } from "youtube-transcript/dist/youtube-transcript.esm.js";
-
 
 export const getTranscript = async (id: string) => {
-
-  const transcriptData = await fetchTranscript(id);
+  const { YoutubeTranscript } = await import('youtube-transcript')
+  const transcriptData = await YoutubeTranscript.fetchTranscript(id);
   if (!transcriptData || transcriptData.length === 0) {
     return
   }
