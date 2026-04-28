@@ -62,7 +62,7 @@ export const handleChat = async (req: AuthRequest, res: Response) => {
     res.json({ text: response });
   } catch (error) {
     console.error("Gemini Error:", error);
-    res.status(500).json({ error: "Failed to get AI response" });
+    res.status(500).json({ error: "Failed to get AI response", msg: error });
   }
 };
 
@@ -89,7 +89,7 @@ export const getHistory = async (req: AuthRequest, res: Response) => {
   const { data, error } = await query.order("created_at", { ascending: true });
 
   if (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: error.message, msg: error });
     return;
   }
 
@@ -156,6 +156,6 @@ export const getTopics = async (req: AuthRequest, res: Response) => {
     res.json({ data: topics });
   } catch (error) {
     console.error("Topics Generation Error:", error);
-    res.status(500).json({ error: "Failed to generate topics" });
+    res.status(500).json({ error: "Failed to generate topics", msg: error  });
   }
 };
