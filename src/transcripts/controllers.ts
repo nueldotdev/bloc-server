@@ -17,8 +17,11 @@ export const getTranscriptRoute = async (ctx: routeController) => {
     } else {
       return ctx.res.status(400).json({ error: "Video ID is required" });
     }
-  } catch (error) {
-    console.error("Transcript Error:", error);
-    return ctx.res.status(500).json({ error: "Failed to fetch transcript", msg: error });
-  }
+  } catch (error: any) {
+  console.error("Transcript Error:", error);
+  return ctx.res.status(500).json({ 
+    error: "Failed to fetch transcript", 
+    msg: error?.message || String(error)
+  });
+}
 }
