@@ -19,6 +19,6 @@ export const getTranscriptRoute = async (ctx: routeController) => {
     }
   } catch (error) {
     console.error("Transcript Error:", error);
-    return ctx.res.status(500).json({ error: "Failed to fetch transcript" });
+    return ctx.res.status(500).json({ error: "Failed to fetch transcript", msg: error });
   }
 }
