@@ -113,7 +113,10 @@ export const getTopics = async (req: AuthRequest, res: Response) => {
       .maybeSingle(); // maybeSingle() is safer than .single()
 
     if (dbError) {
-        console.warn("Database check for topics failed (table might not exist):", dbError.message);
+      console.warn(
+        "Database check for topics failed (table might not exist):",
+        dbError.message,
+      );
     }
 
     if (existingTopics) {
@@ -128,7 +131,7 @@ export const getTopics = async (req: AuthRequest, res: Response) => {
         ${videoTranscript.slice(0, 20000)}`;
 
     const result = await client.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3-flash-preview",
       contents: [{ role: "user", parts: [{ text: prompt }] }],
     });
 
@@ -141,21 +144,23 @@ export const getTopics = async (req: AuthRequest, res: Response) => {
 
     if (topics.length > 0) {
       // Save to database
-      const { error: insertError } = await supabase.from("video_topics").insert([
-        {
-          video_id: videoId,
-          topics: topics,
-        },
-      ]);
+      const { error: insertError } = await supabase
+        .from("video_topics")
+        .insert([
+          {
+            video_id: videoId,
+            topics: topics,
+          },
+        ]);
 
       if (insertError) {
-          console.error("Error saving topics to database:", insertError.message);
+        console.error("Error saving topics to database:", insertError.message);
       }
     }
 
     res.json({ data: topics });
   } catch (error) {
     console.error("Topics Generation Error:", error);
-    res.status(500).json({ error: "Failed to generate topics", msg: error  });
+    res.status(500).json({ error: "Failed to generate topics", msg: error });
   }
 };

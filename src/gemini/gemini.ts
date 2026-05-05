@@ -19,8 +19,8 @@ export const getGeminiResponse = async (
   history: { role: string; content: string }[], // New SDK uses 'content' instead of 'parts'
   videoTranscript?: string,
 ) => {
-  // Using the latest gemini-2.5-flash model
-  const model = "gemini-2.5-flash";
+  // Using the latest gemini-3-flash-preview model
+  const model = "gemini-3-flash-preview";
 
   let fullMessage = userMessage;
   if (videoTranscript) {
