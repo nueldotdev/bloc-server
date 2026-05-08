@@ -110,13 +110,10 @@ export const getTopics = async (req: AuthRequest, res: Response) => {
       .from("video_topics")
       .select("topics")
       .eq("video_id", videoId)
-      .maybeSingle(); // maybeSingle() is safer than .single()
+      .maybeSingle();
 
     if (dbError) {
-      console.warn(
-        "Database check for topics failed (table might not exist):",
-        dbError.message,
-      );
+      console.warn("Database check for topics failed:", dbError.message);
     }
 
     if (existingTopics) {
@@ -136,31 +133,64 @@ export const getTopics = async (req: AuthRequest, res: Response) => {
     });
 
     const text = result.text;
-    // console.log("text: => ", text);
-
-    // Extract JSON from response
     const jsonMatch = text?.match(/\[.*\]/s);
     const topics = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
 
     if (topics.length > 0) {
-      // Save to database
-      const { error: insertError } = await supabase
-        .from("video_topics")
-        .insert([
-          {
-            video_id: videoId,
-            topics: topics,
-          },
-        ]);
-
-      if (insertError) {
-        console.error("Error saving topics to database:", insertError.message);
-      }
+      await supabase.from("video_topics").insert([{ video_id: videoId, topics: topics }]);
     }
 
     res.json({ data: topics });
   } catch (error) {
     console.error("Topics Generation Error:", error);
     res.status(500).json({ error: "Failed to generate topics", msg: error });
+  }
+};
+
+export const getFinalQuiz = async (req: AuthRequest, res: Response) => {
+  const { videoId, videoTranscript, videoTitle } = req.body;
+
+  if (!videoId || !videoTranscript) {
+    res.status(400).json({ error: "Video ID and transcript are required" });
+    return;
+  }
+
+  try {
+    const prompt = `Based on the following video titled "${videoTitle}", generate a comprehensive final quiz to test the user's understanding of the entire content.
+        Generate 5 multiple-choice questions. 
+        Each question must have:
+        - The question text
+        - 4 options (A, B, C, D)
+        - The correct answer (the letter A, B, C, or D)
+        - A brief explanation of why that answer is correct.
+
+        Return the response as a JSON array of objects with the following structure:
+        [
+          {
+            "id": 1,
+            "question": "What is...?",
+            "options": ["Option A", "Option B", "Option C", "Option D"],
+            "correctAnswer": "A",
+            "explanation": "Because..."
+          },
+          ...
+        ]
+
+        Transcript:
+        ${videoTranscript.slice(0, 25000)}`;
+
+    const result = await client.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+    });
+
+    const text = result.text;
+    const jsonMatch = text?.match(/\[.*\]/s);
+    const quiz = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
+
+    res.json({ data: quiz });
+  } catch (error) {
+    console.error("Final Quiz Generation Error:", error);
+    res.status(500).json({ error: "Failed to generate final quiz", msg: error });
   }
 };

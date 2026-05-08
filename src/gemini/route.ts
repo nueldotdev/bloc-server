@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { handleChat, getHistory, getTopics } from './controller'
+import { handleChat, getHistory, getTopics, getFinalQuiz } from './controller'
 import { requireAuth } from '../utils/auth'
 
 const router = Router()
@@ -14,6 +14,10 @@ router.get('/history/:videoId', requireAuth, (req, res) => {
 
 router.post('/topics', requireAuth, (req, res) => {
     getTopics(req, res)
+})
+
+router.post('/final-quiz', requireAuth, (req, res) => {
+    getFinalQuiz(req, res)
 })
 
 export default router
