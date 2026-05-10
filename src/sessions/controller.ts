@@ -132,7 +132,7 @@ export const deleteSession = async (req: AuthRequest, res: Response) => {
 
 export const updateSession = async (req: AuthRequest, res: Response) => {
   const { id } = req.params
-  const { name, initialUrl, queue, isPublic, description, coverUrl } = req.body
+  const { name, initialUrl, queue, isPublic, description, coverUrl, lastVideoId, lastTimestamp } = req.body
   const user = req.user
 
   if (!user) {
@@ -147,6 +147,13 @@ export const updateSession = async (req: AuthRequest, res: Response) => {
   if (isPublic !== undefined) updateData.is_public = isPublic
   if (description !== undefined) updateData.description = description
   if (coverUrl !== undefined) updateData.cover_url = coverUrl
+  if (lastVideoId !== undefined) updateData.last_video_id = lastVideoId
+  if (lastTimestamp !== undefined) updateData.last_timestamp = lastTimestamp
+  
+  // Track when the session was last watched
+  if (lastVideoId !== undefined || lastTimestamp !== undefined) {
+      updateData.last_watched_at = new Date().toISOString()
+  }
 
   const { data, error } = await supabase
     .from('sessions')
