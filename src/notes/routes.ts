@@ -1,8 +1,12 @@
 import { Router } from 'express'
-import { createNote, getNotes, deleteNote, updateNote } from './controller'
+import { createNote, getNotes, deleteNote, updateNote, getAllNotes } from './controller'
 import { requireAuth } from '../utils/auth'
 
 const router = Router()
+
+router.get('/', requireAuth, (req, res) => {
+    getAllNotes(req, res)
+})
 
 router.post('/', requireAuth, (req, res) => {
     createNote(req, res)

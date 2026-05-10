@@ -6,6 +6,7 @@ import geminiRouter from './gemini/route'
 import notesRouter from './notes/routes'
 import sessionsRouter from './sessions/routes'
 import libraryRouter from './library/routes'
+import profileRouter from './profiles/routes'
 
 // Dynamically import dotenv for ESM compatibility
 const loadDotEnv = async () => {
@@ -39,7 +40,8 @@ app.use(cors({
   credentials: true,
 }))
 
-app.use(express.json())
+app.use(express.json({ limit: '10mb' }))
+app.use(express.urlencoded({ limit: '10mb', extended: true }))
 
 // Request logger for debugging
 app.use((req, res, next) => {
@@ -56,6 +58,7 @@ app.use('/gemini', geminiRouter)
 app.use('/notes', notesRouter)
 app.use('/sessions', sessionsRouter)
 app.use('/library', libraryRouter)
+app.use('/profiles', profileRouter)
 
 // 404 Handler
 app.use((req, res) => {

@@ -60,6 +60,34 @@ export const getNotes = async (req: AuthRequest, res: Response) => {
   res.json({ data })
 }
 
+export const getAllNotes = async (req: AuthRequest, res: Response) => {
+    const user = req.user
+
+    if (!user) {
+        res.status(401).json({ error: 'Authentication required' })
+        return
+    }
+
+    const { data, error } = await supabase
+        .from('notes')
+        .select(`
+            *,
+            sessions (
+                name,
+                queue
+            )
+        `)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+
+    if (error) {
+        res.status(500).json({ error: error.message })
+        return
+    }
+
+    res.json({ data })
+}
+
 export const deleteNote = async (req: AuthRequest, res: Response) => {
     const { id } = req.params
     const user = req.user
