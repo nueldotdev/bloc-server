@@ -27,7 +27,7 @@ export const getProfileById = async (req: AuthRequest, res: Response) => {
 
 export const updateProfile = async (req: AuthRequest, res: Response) => {
     const { id } = req.params
-    const { full_name, avatar_url, sanity_checks_enabled } = req.body
+    const { full_name, avatar_url, sanity_checks_enabled, learning_intensity, preferred_check_type } = req.body
     const user = req.user
 
     if (!user) {
@@ -39,6 +39,8 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
     if (full_name !== undefined) updateData.full_name = full_name
     if (avatar_url !== undefined) updateData.avatar_url = avatar_url
     if (sanity_checks_enabled !== undefined) updateData.sanity_checks_enabled = sanity_checks_enabled
+    if (learning_intensity !== undefined) updateData.learning_intensity = learning_intensity
+    if (preferred_check_type !== undefined) updateData.preferred_check_type = preferred_check_type
 
     const { data, error } = await supabase
         .from('profiles')

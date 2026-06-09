@@ -106,8 +106,8 @@ export const getTopics = async (req: AuthRequest, res: Response) => {
 
   try {
     // Check database first
-    const { data: existingTopics, error: dbError } = await supabase
-      .from("video_topics")
+    const { data: cached, error: dbError } = await supabase
+      .from("video_cache")
       .select("topics")
       .eq("video_id", videoId)
       .maybeSingle();
@@ -116,8 +116,8 @@ export const getTopics = async (req: AuthRequest, res: Response) => {
       console.warn("Database check for topics failed:", dbError.message);
     }
 
-    if (existingTopics) {
-      return res.json({ data: existingTopics.topics });
+    if (cached?.topics) {
+      return res.json({ data: cached.topics });
     }
 
     const prompt = `Based on the following video transcript, identify 5-8 key topics covered in the video. 
@@ -137,7 +137,7 @@ export const getTopics = async (req: AuthRequest, res: Response) => {
     const topics = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
 
     if (topics.length > 0) {
-      await supabase.from("video_topics").insert([{ video_id: videoId, topics: topics }]);
+      await supabase.from("video_cache").upsert({ video_id: videoId, topics: topics });
     }
 
     res.json({ data: topics });
@@ -192,5 +192,57 @@ export const getFinalQuiz = async (req: AuthRequest, res: Response) => {
   } catch (error) {
     console.error("Final Quiz Generation Error:", error);
     res.status(500).json({ error: "Failed to generate final quiz", msg: error });
+  }
+};
+
+export const getDynamicSanityCheck = async (req: AuthRequest, res: Response) => {
+  const { videoId, videoTranscript, videoTitle, timestamp } = req.body;
+
+  if (!videoId || !videoTranscript) {
+    res.status(400).json({ error: "Video ID and transcript are required" });
+    return;
+  }
+
+  try {
+    // Improve context slicing: Get a chunk around the current timestamp
+    // Assuming roughly 150 words (1000 chars) per minute of video
+    const estimatedCharIndex = Math.floor((timestamp / 60) * 1000);
+    const start = Math.max(0, estimatedCharIndex - 2000);
+    const end = start + 15000;
+    const transcriptChunk = videoTranscript.slice(start, end);
+
+    const prompt = `Based on the following video titled "${videoTitle}", generate ONE multiple-choice question to check if the user is paying attention to the concepts discussed JUST BEFORE the timestamp ${Math.floor(timestamp / 60)}:${(timestamp % 60).toString().padStart(2, '0')}.
+        
+        The transcript below includes timestamp markers like [mm:ss]. 
+        CRITICAL RULES:
+        - ONLY ask about information provided BEFORE the ${Math.floor(timestamp / 60)}:${(timestamp % 60).toString().padStart(2, '0')} marker.
+        - DO NOT mention any concepts that appear in the transcript AFTER the current timestamp.
+        - The question should be specific, concise, and have 4 clear options.
+        - Include the index of the correct answer (0-3).
+
+        Return the response as a JSON object:
+        {
+          "question": "What was just explained regarding...?",
+          "options": ["...", "...", "...", "..."],
+          "correctIndex": 0,
+          "explanation": "..."
+        }
+
+        Transcript Context (centered around user position):
+        ${transcriptChunk}`;
+
+    const result = await client.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+    });
+
+    const text = result.text;
+    const jsonMatch = text?.match(/\{.*\}/s);
+    const question = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
+
+    res.json({ data: question });
+  } catch (error) {
+    console.error("Dynamic Sanity Check Error:", error);
+    res.status(500).json({ error: "Failed to generate sanity check", msg: error });
   }
 };
