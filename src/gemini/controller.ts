@@ -21,7 +21,16 @@ export const handleChat = async (req: AuthRequest, res: Response) => {
   }
 
   try {
-    const contextText = `The user is watching a video titled "${videoTitle}" at the timestamp ${Math.floor(timestamp)} seconds.`;
+    // Fetch user profile for language preference
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("preferred_language")
+      .eq("id", user.id)
+      .single();
+    
+    const language = profile?.preferred_language || "English";
+    const contextText = `The user is watching a video titled "${videoTitle}" at the timestamp ${Math.floor(timestamp)} seconds. 
+    IMPORTANT: You must respond in ${language}.`;
 
     // Convert history format if needed (Watchpage sends {role, parts: [{text}]})
     const formattedHistory = (history || []).map((h: any) => ({
@@ -98,6 +107,7 @@ export const getHistory = async (req: AuthRequest, res: Response) => {
 
 export const getTopics = async (req: AuthRequest, res: Response) => {
   const { videoId, videoTranscript } = req.body;
+  const user = req.user;
 
   if (!videoId || !videoTranscript) {
     res.status(400).json({ error: "Video ID and transcript are required" });
@@ -105,7 +115,16 @@ export const getTopics = async (req: AuthRequest, res: Response) => {
   }
 
   try {
-    // Check database first
+    // Fetch user profile for language preference
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("preferred_language")
+      .eq("id", user?.id)
+      .single();
+    
+    const language = profile?.preferred_language || "English";
+
+    // Check database for existing topics in this specific language
     const { data: cached, error: dbError } = await supabase
       .from("video_cache")
       .select("topics")
@@ -116,11 +135,13 @@ export const getTopics = async (req: AuthRequest, res: Response) => {
       console.warn("Database check for topics failed:", dbError.message);
     }
 
-    if (cached?.topics) {
-      return res.json({ data: cached.topics });
+    // topics is now a map: { "English": [...], "Spanish": [...] }
+    if (cached?.topics && cached.topics[language]) {
+      return res.json({ data: cached.topics[language] });
     }
 
     const prompt = `Based on the following video transcript, identify 5-8 key topics covered in the video. 
+        IMPORTANT: All topics must be in ${language}.
         Return the response as a JSON array of strings, where each string is a concise topic title.
         Example: ["Introduction to React", "State Management", "Hooks", "Conclusion"]
 
@@ -134,13 +155,23 @@ export const getTopics = async (req: AuthRequest, res: Response) => {
 
     const text = result.text;
     const jsonMatch = text?.match(/\[.*\]/s);
-    const topics = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
+    const topicsList = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
 
-    if (topics.length > 0) {
-      await supabase.from("video_cache").upsert({ video_id: videoId, topics: topics });
+    if (topicsList.length > 0) {
+      // Merge with existing topics map
+      const currentTopics = cached?.topics || {};
+      const updatedTopics = {
+        ...currentTopics,
+        [language]: topicsList
+      };
+
+      await supabase.from("video_cache").upsert({ 
+        video_id: videoId, 
+        topics: updatedTopics 
+      });
     }
 
-    res.json({ data: topics });
+    res.json({ data: topicsList });
   } catch (error) {
     console.error("Topics Generation Error:", error);
     res.status(500).json({ error: "Failed to generate topics", msg: error });
@@ -149,6 +180,7 @@ export const getTopics = async (req: AuthRequest, res: Response) => {
 
 export const getFinalQuiz = async (req: AuthRequest, res: Response) => {
   const { videoId, videoTranscript, videoTitle } = req.body;
+  const user = req.user;
 
   if (!videoId || !videoTranscript) {
     res.status(400).json({ error: "Video ID and transcript are required" });
@@ -156,7 +188,17 @@ export const getFinalQuiz = async (req: AuthRequest, res: Response) => {
   }
 
   try {
+    // Fetch user profile for language preference
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("preferred_language")
+      .eq("id", user?.id)
+      .single();
+    
+    const language = profile?.preferred_language || "English";
+
     const prompt = `Based on the following video titled "${videoTitle}", generate a comprehensive final quiz to test the user's understanding of the entire content.
+        IMPORTANT: The question, options, and explanation must all be in ${language}.
         Generate 5 multiple-choice questions. 
         Each question must have:
         - The question text
@@ -197,6 +239,7 @@ export const getFinalQuiz = async (req: AuthRequest, res: Response) => {
 
 export const getDynamicSanityCheck = async (req: AuthRequest, res: Response) => {
   const { videoId, videoTranscript, videoTitle, timestamp } = req.body;
+  const user = req.user;
 
   if (!videoId || !videoTranscript) {
     res.status(400).json({ error: "Video ID and transcript are required" });
@@ -204,6 +247,15 @@ export const getDynamicSanityCheck = async (req: AuthRequest, res: Response) => 
   }
 
   try {
+    // Fetch user profile for language preference
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("preferred_language")
+      .eq("id", user?.id)
+      .single();
+    
+    const language = profile?.preferred_language || "English";
+
     // Improve context slicing: Get a chunk around the current timestamp
     // Assuming roughly 150 words (1000 chars) per minute of video
     const estimatedCharIndex = Math.floor((timestamp / 60) * 1000);
@@ -213,6 +265,8 @@ export const getDynamicSanityCheck = async (req: AuthRequest, res: Response) => 
 
     const prompt = `Based on the following video titled "${videoTitle}", generate ONE multiple-choice question to check if the user is paying attention to the concepts discussed JUST BEFORE the timestamp ${Math.floor(timestamp / 60)}:${(timestamp % 60).toString().padStart(2, '0')}.
         
+        IMPORTANT: The question, options, and explanation must all be in ${language}.
+
         The transcript below includes timestamp markers like [mm:ss]. 
         CRITICAL RULES:
         - ONLY ask about information provided BEFORE the ${Math.floor(timestamp / 60)}:${(timestamp % 60).toString().padStart(2, '0')} marker.
