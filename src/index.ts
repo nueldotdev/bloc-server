@@ -7,6 +7,7 @@ import notesRouter from './notes/routes'
 import sessionsRouter from './sessions/routes'
 import libraryRouter from './library/routes'
 import profileRouter from './profiles/routes'
+import playlistRouter from './playlists/routes'
 
 // Dynamically import dotenv for ESM compatibility
 const loadDotEnv = async () => {
@@ -59,6 +60,7 @@ app.use('/notes', notesRouter)
 app.use('/sessions', sessionsRouter)
 app.use('/library', libraryRouter)
 app.use('/profiles', profileRouter)
+app.use('/playlists', playlistRouter)
 
 // 404 Handler
 app.use((req, res) => {

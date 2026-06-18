@@ -150,6 +150,7 @@ export const getTopics = async (req: AuthRequest, res: Response) => {
 
     const result = await client.models.generateContent({
       model: "gemini-3-flash-preview",
+      model: "gemini-3-flash-preview",
       contents: [{ role: "user", parts: [{ text: prompt }] }],
     });
 
@@ -223,6 +224,7 @@ export const getFinalQuiz = async (req: AuthRequest, res: Response) => {
 
     const result = await client.models.generateContent({
       model: "gemini-3-flash-preview",
+      model: "gemini-3-flash-preview",
       contents: [{ role: "user", parts: [{ text: prompt }] }],
     });
 
@@ -287,6 +289,7 @@ export const getDynamicSanityCheck = async (req: AuthRequest, res: Response) => 
 
     const result = await client.models.generateContent({
       model: "gemini-3-flash-preview",
+      // model: "gemini-1.5-flash",/
       contents: [{ role: "user", parts: [{ text: prompt }] }],
     });
 
