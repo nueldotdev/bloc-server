@@ -150,7 +150,6 @@ export const getTopics = async (req: AuthRequest, res: Response) => {
 
     const result = await client.models.generateContent({
       model: "gemini-3-flash-preview",
-      model: "gemini-3-flash-preview",
       contents: [{ role: "user", parts: [{ text: prompt }] }],
     });
 
@@ -223,7 +222,6 @@ export const getFinalQuiz = async (req: AuthRequest, res: Response) => {
         ${videoTranscript.slice(0, 25000)}`;
 
     const result = await client.models.generateContent({
-      model: "gemini-3-flash-preview",
       model: "gemini-3-flash-preview",
       contents: [{ role: "user", parts: [{ text: prompt }] }],
     });
